@@ -14,10 +14,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using TagTracker.Adorners;
+using TagTracker.Helpers;
 using TagTracker.TagLibService.Interfaces;
 using TagTracker.TagLibService.Services;
 using TagTracker.Utility;
 using TagTracker.ViewModel;
+using ListViewItem = System.Windows.Controls.ListViewItem;
 
 namespace TagTracker
 {
@@ -62,34 +64,20 @@ namespace TagTracker
 
         public ObservableCollection<string> PathHistory
         {
-            get
-            {
-                return (ObservableCollection<string>)GetValue(PathHistoryProperty);
-            }
-
-            private set
-            {
-                SetValue(PathHistoryProperty, value);
-            }
+            get => (ObservableCollection<string>)GetValue(PathHistoryProperty);
+            private set => SetValue(PathHistoryProperty, value);
         }
 
         public int CurrentAlbumArtIndex
         {
-            get
-            {
-                return (int)GetValue(CurrentAlbumArtIndexProperty);
-            }
-
-            private set
-            {
-                SetValue(CurrentAlbumArtIndexProperty, value);
-            }
+            get => (int)GetValue(CurrentAlbumArtIndexProperty);
+            private set => SetValue(CurrentAlbumArtIndexProperty, value);
         }
 
         public string CurrentAlbumArtDimension
         {
-            get { return (string)GetValue(CurrentAlbumArtDimensionProperty); }
-            private set { SetValue(CurrentAlbumArtDimensionProperty, value); }
+            get => (string)GetValue(CurrentAlbumArtDimensionProperty);
+            private set => SetValue(CurrentAlbumArtDimensionProperty, value);
         }
 
         private static bool IsItemPopulated(ItemsControl item)
@@ -125,7 +113,9 @@ namespace TagTracker
                 TreeViewItem newItem = new TreeViewItem
                 {
                     Tag = folder,
-                    Header = folder.Replace(path, string.Empty).Replace(@"\", string.Empty)
+                    Header = folder
+                        .Replace(path, string.Empty, StringComparison.OrdinalIgnoreCase)
+                        .Replace(@"\", string.Empty, StringComparison.OrdinalIgnoreCase)
                 };
                 newItem.Items.Add("*");
                 item.Items.Add(newItem);
@@ -155,22 +145,21 @@ namespace TagTracker
 
         private void RefreshCommand_Executed(object sender, ExecutedRoutedEventArgs e)
         {
-            if (e.OriginalSource is System.Windows.Controls.ListViewItem)
+            if (e.OriginalSource is ListViewItem sourceItem)
             {
-                var item = e.OriginalSource as System.Windows.Controls.ListViewItem;
-                if (item.Content is TrackInfoViewModel)
+                if (sourceItem.Content is TrackInfoViewModel model)
                 {
-                    ((TrackInfoViewModel)item.Content).Refresh();
-                    UpdateAlbumArt((TrackInfoViewModel)item.Content);
+                    model.Refresh();
+                    UpdateAlbumArt(model);
                 }
             }
             else
             {
-                TreeViewItem item = FoldersTreeView.SelectedItem as TreeViewItem;
-                PopulateTreeLevel(item);
-                if (item != null)
+                TreeViewItem selectedItem = FoldersTreeView.SelectedItem as TreeViewItem;
+                PopulateTreeLevel(selectedItem);
+                if (selectedItem != null)
                 {
-                    PopulateContentList(item.Tag as string);
+                    PopulateContentList(selectedItem.Tag as string);
                 }
             }
         }
@@ -187,8 +176,7 @@ namespace TagTracker
 
         private void IncludeSubFoldersCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            TreeViewItem item = FoldersTreeView.SelectedItem as TreeViewItem;
-            if (item != null)
+            if (FoldersTreeView.SelectedItem is TreeViewItem item)
             {
                 PopulateContentList(item.Tag as string);
             }
@@ -206,8 +194,7 @@ namespace TagTracker
 
         private void FoldersTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            TreeViewItem item = e.NewValue as TreeViewItem;
-            if (item != null)
+            if (e.NewValue is TreeViewItem item)
             {
                 PopulateContentList(item.Tag as string);
             }
@@ -227,8 +214,7 @@ namespace TagTracker
 
         private void PathHistoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            TreeViewItem item = FoldersTreeView.SelectedItem as TreeViewItem;
-            if (item != null)
+            if (FoldersTreeView.SelectedItem is TreeViewItem item)
             {
                 string selectedPath = e.AddedItems[0].ToString();
                 string selectedNode = item.Tag as string;
@@ -301,10 +287,9 @@ namespace TagTracker
                 {
                     return;
                 }
-                if (_lastHeaderClicked == null)
-                {
-                    _lastHeaderClicked = (GridViewColumnHeader)((GridView)ContentListView.View).Columns[0].Header;
-                }
+
+                _lastHeaderClicked ??= (GridViewColumnHeader)((GridView)ContentListView.View).Columns[0].Header;
+
                 Sort(_lastHeaderClicked.Content as string, _lastDirection == ListSortDirection.Ascending);
                 ContentListView.SelectedIndex = 0;
             }
@@ -328,8 +313,7 @@ namespace TagTracker
 
         private void UpdateAlbumArt(TrackInfoViewModel trackInfoViewModel)
         {
-            if (trackInfoViewModel == null
-                || trackInfoViewModel.TrackInfo == null
+            if (trackInfoViewModel?.TrackInfo == null
                 || trackInfoViewModel.TrackInfo.AlbumArtCount == 0
                 || !File.Exists(trackInfoViewModel.TrackInfo.FileName))
             {
@@ -439,12 +423,11 @@ namespace TagTracker
 
         private void ContentListView_ColumnHeaderClick(object sender, RoutedEventArgs e)
         {
-            GridViewColumnHeader headerClicked = e.OriginalSource as GridViewColumnHeader;
-            if (headerClicked != null)
+            if (e.OriginalSource is GridViewColumnHeader headerClicked)
             {
                 if (_lastHeaderClicked != null && _sortAdorner != null)
                 {
-                    AdornerLayer.GetAdornerLayer(_lastHeaderClicked).Remove(_sortAdorner);
+                    AdornerLayer.GetAdornerLayer(_lastHeaderClicked)?.Remove(_sortAdorner);
                 }
 
                 ListSortDirection direction;
@@ -464,7 +447,7 @@ namespace TagTracker
                 _lastHeaderClicked = headerClicked;
                 _lastDirection = direction;
                 _sortAdorner = new SortAdorner(_lastHeaderClicked, direction, null);
-                AdornerLayer.GetAdornerLayer(_lastHeaderClicked).Add(_sortAdorner);
+                AdornerLayer.GetAdornerLayer(_lastHeaderClicked)?.Add(_sortAdorner);
             }
         }
 

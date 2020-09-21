@@ -7,6 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="clr-namespace:TagTracker"
     xmlns:convs="clr-namespace:TagTracker.Converters"
+    xmlns:helpers="clr-namespace:TagTracker.Helpers"
     mc:Ignorable="d"
     Title="Tag Tracker"
     Height="426"
@@ -67,14 +68,14 @@
                             <DataTrigger
                                 Binding="{Binding
                                     RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeViewItem}},
-                                    Path=(local:TreeViewItemProps.IsRootLevel)}"
+                                    Path=(helpers:TreeViewItemProps.IsRootLevel)}"
                                 Value="True">
                                 <Setter TargetName="treeItemIcon" Property="Source" Value="Images/DiskDrive.png"/>
                             </DataTrigger>
                             <DataTrigger
                                 Binding="{Binding
                                     RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeViewItem}},
-                                    Path=(local:TreeViewItemProps.IsRootLevel)}"
+                                    Path=(helpers:TreeViewItemProps.IsRootLevel)}"
                                 Value="False">
                                 <Setter TargetName="treeItemIcon" Property="Source" Value="Images/Folder.png"/>
                             </DataTrigger>

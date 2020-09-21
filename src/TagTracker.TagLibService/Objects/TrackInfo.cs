@@ -1,10 +1,12 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using TagLib.Mpeg;
 using TagTracker.TagLibService.Interfaces;
-using IO = System.IO;
+using IOFile = System.IO.File;
+using TagLibFile = TagLib.File;
 
 namespace TagTracker.TagLibService.Objects
 {
@@ -14,12 +16,12 @@ namespace TagTracker.TagLibService.Objects
         {
             if (string.IsNullOrEmpty(filePath))
             {
-                throw new ArgumentException("The file path is null or empty.", "filePath");
+                throw new ArgumentException("The file path is null or empty.", nameof(filePath));
             }
 
-            if (!IO.File.Exists(filePath))
+            if (!IOFile.Exists(filePath))
             {
-                throw new IO.FileNotFoundException();
+                throw new FileNotFoundException();
             }
 
             FileName = filePath;
@@ -54,25 +56,21 @@ namespace TagTracker.TagLibService.Objects
 
         public string Comment { get; set; }
 
-        public bool DecentBitrate
-        {
-            get
-            {
-                return Bitrate >= 192 || (VariableBitrate && Bitrate >= 170);
-            }
-        }
+        public bool DecentBitrate => Bitrate >= 192 || (VariableBitrate && Bitrate >= 170);
 
         public byte[] AlbumArt(int index)
         {
-            if (index < 0 || index >= AlbumArtCount || !IO.File.Exists(FileName))
+            if (index < 0 || index >= AlbumArtCount || !IOFile.Exists(FileName))
             {
                 return null;
             }
 
-            TagLib.File mediaFile = TagLib.File.Create(FileName);
             try
             {
-                return mediaFile.Tag.Pictures[index].Data.Data;
+                using (var mediaFile = TagLibFile.Create(FileName))
+                {
+                    return mediaFile.Tag.Pictures[index].Data.Data;
+                }
             }
             catch (IndexOutOfRangeException)
             {
@@ -103,26 +101,29 @@ namespace TagTracker.TagLibService.Objects
         {
             try
             {
-                TagLib.File mediaFile = TagLib.File.Create(FileName);
-
-                TrackNumber = (int)mediaFile.Tag.Track;
-                TrackTitle = mediaFile.Tag.Title;
-                TrackArtist = mediaFile.Tag.JoinedPerformers;
-                AlbumTitle = mediaFile.Tag.Album;
-                AlbumArtist = mediaFile.Tag.JoinedAlbumArtists;
-                AlbumYear = (int)mediaFile.Tag.Year;
-                AlbumArtCount = mediaFile.Tag.Pictures.Length;
-                DiscNumber = (int)mediaFile.Tag.Disc == 0 ? 1 : (int)mediaFile.Tag.Disc;
-                Duration = mediaFile.Properties.Duration.ToString(@"mm\:ss", CultureInfo.InvariantCulture);
-                Comment = mediaFile.Tag.Comment;
-
-                // Seems to need to go through the codecs to have the Bitrate read 
-                // from AudioBitrate properly... Hmmm...
-                foreach (AudioHeader header in mediaFile.Properties.Codecs.Cast<AudioHeader>())
+                using (var mediaFile = TagLibFile.Create(FileName))
                 {
-                    VariableBitrate = header.VBRIHeader.Present || header.XingHeader.Present;
+
+                    TrackNumber = (int)mediaFile.Tag.Track;
+                    TrackTitle = mediaFile.Tag.Title;
+                    TrackArtist = mediaFile.Tag.JoinedPerformers;
+                    AlbumTitle = mediaFile.Tag.Album;
+                    AlbumArtist = mediaFile.Tag.JoinedAlbumArtists;
+                    AlbumYear = (int)mediaFile.Tag.Year;
+                    AlbumArtCount = mediaFile.Tag.Pictures.Length;
+                    DiscNumber = (int)mediaFile.Tag.Disc == 0 ? 1 : (int)mediaFile.Tag.Disc;
+                    Duration = mediaFile.Properties.Duration.ToString(@"mm\:ss", CultureInfo.InvariantCulture);
+                    Comment = mediaFile.Tag.Comment;
+
+                    // Seems to need to go through the codecs to have the Bitrate read 
+                    // from AudioBitrate properly... Hmmm...
+                    foreach (AudioHeader header in mediaFile.Properties.Codecs.Cast<AudioHeader>())
+                    {
+                        VariableBitrate = header.VBRIHeader.Present || header.XingHeader.Present;
+                    }
+
+                    Bitrate = mediaFile.Properties.AudioBitrate;
                 }
-                Bitrate = mediaFile.Properties.AudioBitrate;
             }
             catch
             {

@@ -35,22 +35,8 @@ namespace TagTracker.TagLibService.Services
         }
 
         /// <summary>
-        /// Reads the track information in all media files found in the folder specified
-        /// by <paramref name="path"/>, including subfolders if specified.
-        /// </summary>
-        /// <param name="path">The path.</param>
-        /// <param name="includeSubfolders">If <c>true</c>, include subfolders.</param>
-        /// <returns>
-        /// A list of <see cref="ITrackInfo"/>.
-        /// </returns>
-        public static IEnumerable<ITrackInfo> ReadTracksInfo(string path, bool includeSubfolders)
-        {
-            return ReadTracksInfo(path, includeSubfolders, DefaultExtensions);
-        }
-
-        /// <summary>
-        /// Reads the track information in all media files found in the folder specified
-        /// by <paramref name="path"/>, including subfolders if specified.
+        /// Reads the track information in all media files found in the folder specified by <paramref name="path"/>, including subfolders
+        /// if specified.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="includeSubfolders">If <c>true</c>, include subfolders.</param>
@@ -61,7 +47,7 @@ namespace TagTracker.TagLibService.Services
         public static IEnumerable<ITrackInfo> ReadTracksInfo(
             string path,
             bool includeSubfolders,
-            string extensions)
+            string extensions = DefaultExtensions)
         {
             var results = new List<ITrackInfo>();
 
