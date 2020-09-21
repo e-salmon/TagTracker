@@ -1,0 +1,494 @@
+﻿<Window 
+    x:Class="TagTracker.MainWindow"
+    x:Name="TagTrackerMainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="clr-namespace:TagTracker"
+    xmlns:convs="clr-namespace:TagTracker.Converters"
+    mc:Ignorable="d"
+    Title="Tag Tracker"
+    Height="426"
+    Width="938"
+    MinWidth="380"
+    MinHeight="200"
+    FontFamily="Calibri"
+    Loaded="Window_Loaded"
+    WindowStartupLocation="CenterScreen"
+    WindowState="Maximized">
+
+    <Window.CommandBindings>
+        <CommandBinding Command="Open"
+                        Executed="OpenCommand_Executed"
+                        CanExecute="OpenCommand_CanExecute"/>
+        
+        <CommandBinding Command="Refresh"
+                        Executed="RefreshCommand_Executed"
+                        CanExecute="RefreshCommand_CanExecute"/>
+    </Window.CommandBindings>
+    
+    <Window.Resources>
+        <convs:BooleanToValueConverter x:Key="ImageSelector" TrueValue="Images\Tick16.png" FalseValue="Images\Warning16.png" />
+        <convs:BooleanToValueConverter x:Key="VisibilitySelector" TrueValue="Visible" FalseValue="Hidden" />
+        <convs:MissingValueConverter x:Key="MissingConverter" ReplacementValue="{x:Null}" />
+        <convs:CountToValueConverter x:Key="CountConverter" Zero="Images\Warning16.png" One="Images\Tick16.png" Many="Images\Ticks.png"/>
+
+        <Style TargetType="Image">
+            <Setter Property="UseLayoutRounding" Value="True"/>
+        </Style>
+
+        <Style TargetType="{x:Type TreeViewItem}">
+            <Setter Property="HeaderTemplate">
+                <Setter.Value>
+                    <DataTemplate DataType="ContentPresenter">
+                        <Border Name="treeItemBorder"  BorderThickness="1" CornerRadius="2">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch">
+                                <Image Name="treeItemIcon" Width="25" Height="25" Stretch="Fill"/>
+                                <TextBlock Text="{Binding}" VerticalAlignment="Center" Margin="5,0" />
+                            </StackPanel>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger
+                                Binding="{Binding
+                                    RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeViewItem}},
+                                    Path=IsSelected}"
+                                Value="True">
+                                <Setter TargetName="treeItemBorder" Property="BorderBrush" Value="#adc6e5"/>
+                            </DataTrigger>
+                            <DataTrigger
+                                Binding="{Binding
+                                    RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeViewItem}},
+                                    Path=IsSelected}"
+                                Value="False">
+                                <Setter TargetName="treeItemBorder" Property="BorderBrush" Value="Transparent"/>
+                            </DataTrigger>
+
+                            <DataTrigger
+                                Binding="{Binding
+                                    RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeViewItem}},
+                                    Path=(local:TreeViewItemProps.IsRootLevel)}"
+                                Value="True">
+                                <Setter TargetName="treeItemIcon" Property="Source" Value="Images/DiskDrive.png"/>
+                            </DataTrigger>
+                            <DataTrigger
+                                Binding="{Binding
+                                    RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type TreeViewItem}},
+                                    Path=(local:TreeViewItemProps.IsRootLevel)}"
+                                Value="False">
+                                <Setter TargetName="treeItemIcon" Property="Source" Value="Images/Folder.png"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FieldHeader" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Margin" Value="0,4,0,0"/>
+        </Style>
+        <Style x:Key="FieldBorder" TargetType="{x:Type Border}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="#FFFFF8F8" Offset="1"/>
+                        <GradientStop Color="#FFEFEFEF"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BorderBrush" Value="#FF7A7A7A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Opacity" Value="4" />
+            <Setter Property="Padding" Value="4,4,4,4" />
+        </Style>
+        <Style TargetType="{x:Type Label}">
+            <Setter Property="Background">
+                <Setter.Value>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="#FFFFF8F8" Offset="1"/>
+                        <GradientStop Color="#FFEFEFEF"/>
+                    </LinearGradientBrush>
+                </Setter.Value>
+            </Setter>
+            <Setter Property="BorderBrush" Value="#FF7A7A7A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="MinHeight" Value="20" />
+            <Setter Property="Padding" Value="4,0,4,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Label}">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="true"
+                                CornerRadius="4">
+                            <ContentPresenter
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ValidatedStyle" BasedOn="{StaticResource {x:Type Label}}" TargetType="{x:Type Label}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Label}">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="true"
+                                CornerRadius="4">
+                            <ContentPresenter
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Content" Value="{x:Null}">
+                                <Setter Property="Background" Value="#FFFFDDCC"/>
+                                <Setter Property="BorderBrush" Value="#FFFF0000"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" MinWidth="200" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="217*"/>
+        </Grid.ColumnDefinitions>
+        <GridSplitter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="6" Grid.Column="1" Grid.Row="0" />
+
+        <Grid DockPanel.Dock="Left" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <StackPanel Margin="6,6,6,0" Orientation="Horizontal">
+                <Button
+                    Command="Open"
+                    ToolTip="Open Folder"
+                    Height="36"
+                    Width="36">
+                    <Image Source="Images\FolderOpen28.png" Stretch="None"/>
+                </Button>
+                <Button
+                    Command="Refresh"
+                    ToolTip="Refresh"
+                    Width="36"
+                    Height="36">
+                    <Image Source="Images\Refresh24.png" Stretch="None"/>
+                </Button>
+            </StackPanel>
+            <ComboBox
+                Name="PathHistoryComboBox"
+                Grid.Row="1"
+                Margin="6,6,6,0"
+                DataContext="{Binding ElementName=TagTrackerMainWindow}"
+                ItemsSource="{Binding Path=PathHistory}" SelectionChanged="PathHistoryComboBox_SelectionChanged">
+            </ComboBox>
+            <CheckBox
+                Name="IncludeSubFoldersCheckBox"
+                Grid.Row="2"
+                IsChecked="False"
+                Margin="6,6,0,0"
+                Content="Include content from sub-folders"
+                Click="IncludeSubFoldersCheckBox_Click" />
+            <TreeView
+                Name="FoldersTreeView"
+                Grid.Row="3"
+                Margin="6,6,0,6"
+                TreeViewItem.Expanded="FoldersTreeView_Expanded"
+                SelectedItemChanged="FoldersTreeView_SelectedItemChanged">
+                <TreeView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Command="NavigationCommands.Refresh"/>
+                    </ContextMenu>
+                </TreeView.ContextMenu>
+                <TreeView.Resources>
+                    <LinearGradientBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FFDCEBFC" Offset="0"/>
+                        <GradientStop Color="#FFC1DBFC" Offset="1"/>
+                    </LinearGradientBrush>
+                    <LinearGradientBrush x:Key="{x:Static SystemColors.ControlBrushKey}" StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FFF8F8F8" Offset="0"/>
+                        <GradientStop Color="#FFE5E5E5" Offset="1"/>
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black" />
+                </TreeView.Resources>
+            </TreeView>
+        </Grid>
+
+        <Grid Grid.Column="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="378*" MinWidth="200"/>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="220*" MinWidth="200" />
+            </Grid.ColumnDefinitions>
+            <GridSplitter HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Width="6" Grid.Column="1"/>
+
+            <ListView
+                Grid.Column="0"
+                Name="ContentListView"
+                SelectionMode="Single"
+                SelectionChanged="ContentListView_SelectionChanged"
+                GridViewColumnHeader.Click="ContentListView_ColumnHeaderClick"
+                AlternationCount="2" >
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Command="NavigationCommands.Refresh"
+                                  CommandParameter="{Binding SelectedItem}" />
+                    </ContextMenu>
+                </ListView.ContextMenu>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Style.Triggers>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="False"/>
+                                    <Condition Property="IsMouseOver" Value="False"/>
+                                    <Condition Property="ItemsControl.AlternationIndex" Value="0"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" Value="#FFFAEA" />
+                            </MultiTrigger>
+                            <DataTrigger Binding="{Binding Path=TrackType}" Value=".wma">
+                                <Setter Property="Foreground" Value="Red"></Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView AllowsColumnReorder="False">
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=TrackInfo.FileName}">
+                            <GridViewColumnHeader>
+                                File Name
+                            </GridViewColumnHeader>
+                        </GridViewColumn>
+                        <GridViewColumn Width="70">
+                            <GridViewColumnHeader>
+                                #
+                            </GridViewColumnHeader>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path=HasTrackNumber, Converter={StaticResource ImageSelector}}" Stretch="None" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="70">
+                            <GridViewColumnHeader>
+                                Title
+                            </GridViewColumnHeader>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path=HasTrackTitle, Converter={StaticResource ImageSelector}}" Stretch="None"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="70">
+                            <GridViewColumnHeader>
+                                Artist
+                            </GridViewColumnHeader>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path=HasTrackArtist, Converter={StaticResource ImageSelector}}" Stretch="None"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="70">
+                            <GridViewColumnHeader>
+                                Album
+                            </GridViewColumnHeader>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path=HasAlbumTitle, Converter={StaticResource ImageSelector}}" Stretch="None"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="70">
+                            <GridViewColumnHeader>
+                                Album Artist
+                            </GridViewColumnHeader>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path=HasAlbumArtist, Converter={StaticResource ImageSelector}}" Stretch="None"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="70">
+                            <GridViewColumnHeader>
+                                Cover Art
+                            </GridViewColumnHeader>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path=AlbumArtCount, Converter={StaticResource CountConverter}}" Stretch="None"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="70">
+                            <GridViewColumnHeader>
+                                Year
+                            </GridViewColumnHeader>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path=HasAlbumYear, Converter={StaticResource ImageSelector}}" Stretch="None"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="70">
+                            <GridViewColumnHeader>
+                                Bitrate
+                            </GridViewColumnHeader>
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding Path=HasDecentBitrate, Converter={StaticResource ImageSelector}}" Stretch="None"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <StackPanel Grid.Column="2" Margin="2,0,6,0"
+                DataContext="{Binding Path=SelectedItem.TrackInfo, ElementName=ContentListView}">
+
+                <TextBlock Text="Track Information" FontSize="18" FontWeight="Bold"/>
+
+                <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
+                    <StackPanel>
+                        <TextBlock Text="Track:" Style="{StaticResource FieldHeader}" />
+                        <Label
+                            Content="{Binding Path=TrackNumber, Converter={StaticResource MissingConverter}}"
+                            Style="{StaticResource ValidatedStyle}"
+                            Width="34" HorizontalAlignment="Left" HorizontalContentAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="Duration:" Style="{StaticResource FieldHeader}" />
+                        <Label
+                            Content="{Binding Path=Duration}"
+                            Width="44" HorizontalAlignment="Left" HorizontalContentAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="Bit Rate:" Style="{StaticResource FieldHeader}" />
+                        <StackPanel Orientation="Horizontal">
+                            <Label
+                                Content="{Binding Path=Bitrate}"
+                                Width="34" HorizontalAlignment="Left" HorizontalContentAlignment="Center">
+                                <Label.Style>
+                                    <Style BasedOn="{StaticResource {x:Type Label}}" TargetType="Label">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Path=DecentBitrate}" Value="False">
+                                                <Setter Property="Background" Value="#FFFFDDCC"/>
+                                                <Setter Property="BorderBrush" Value="#FFFF0000"/>
+                                                <Setter Property="Foreground" Value="#FFFF0000"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Label.Style>
+                            </Label>
+                            <TextBlock
+                                Text="VBR"
+                                FontSize="10"
+                                RenderTransformOrigin="0.5,0.5"
+                                Visibility="{Binding Path=VariableBitrate, Converter={StaticResource VisibilitySelector}}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform Angle="270" />
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="Disc #:" Style="{StaticResource FieldHeader}" />
+                        <Label
+                            Content="{Binding Path=DiscNumber}"
+                            Width="34" HorizontalAlignment="Left" HorizontalContentAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <TextBlock Text="Title:" Style="{StaticResource FieldHeader}" />
+                <Label Content="{Binding Path=TrackTitle, Converter={StaticResource MissingConverter}}"
+                       Style="{StaticResource ValidatedStyle}"/>
+
+                <TextBlock Text="Artist:" Style="{StaticResource FieldHeader}" />
+                <Label Name="TrackArtistLabel"
+                       Content="{Binding Path=TrackArtist, Converter={StaticResource MissingConverter}}"
+                       Style="{StaticResource ValidatedStyle}"/>
+
+                <DockPanel Margin="0,0,0,4">
+                    <StackPanel>
+                        <TextBlock Text="Year:" Style="{StaticResource FieldHeader}" />
+                        <Label
+                            Content="{Binding Path=AlbumYear, Converter={StaticResource MissingConverter}}"
+                            Style="{StaticResource ValidatedStyle}"
+                            Width="44" HorizontalAlignment="Left" HorizontalContentAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Margin="15,0,0,0">
+                        <TextBlock Text="Album:" Style="{StaticResource FieldHeader}" />
+                        <Label Content="{Binding Path=AlbumTitle, Converter={StaticResource MissingConverter}}"
+                               Style="{StaticResource ValidatedStyle}"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <TextBlock Text="Album Artist:" Style="{StaticResource FieldHeader}" />
+                <Label Content="{Binding Path=AlbumArtist, Converter={StaticResource MissingConverter}}"
+                       Style="{StaticResource ValidatedStyle}"/>
+
+                <TextBlock Text="Comment:" Style="{StaticResource FieldHeader}" />
+                <Label Content="{Binding Path=Comment}"/>
+
+                <StackPanel Margin="0,0,0,4" Orientation="Horizontal">
+                    <StackPanel>
+                        <TextBlock Text="Album Art:" Style="{StaticResource FieldHeader}" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button
+                                Name="PreviousAlbumArtButton" Content="3" Height="20" Width="20"
+                                FontFamily="Marlett" Click="PreviousAlbumArtButton_Click"
+                                IsEnabled="False">
+                            </Button>
+                            <Label Width="20" Margin="2,0,2,0" HorizontalContentAlignment="Center"
+                                Content="{Binding
+                                    ElementName=TagTrackerMainWindow,
+                                    Path=CurrentAlbumArtIndex,
+                                    Converter={StaticResource MissingConverter}}"
+                                Style="{StaticResource ValidatedStyle}">
+                            </Label>
+                            <Button
+                                Name="NextAlbumArtButton" Content="4" Height="20" Width="20"
+                                FontFamily="Marlett" Click="NextAlbumArtButton_Click"
+                                IsEnabled="False">
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Margin="20,0,0,0">
+                        <TextBlock Text="Size:" Style="{StaticResource FieldHeader}" />
+                        <Label
+                            Content="{Binding ElementName=TagTrackerMainWindow, Path=CurrentAlbumArtDimension}"
+                            MinWidth="60"
+                            HorizontalContentAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+                <Border Style="{StaticResource FieldBorder}">
+                    <Image
+                        Name="AlbumCoverImage" HorizontalAlignment="Center" Stretch="Uniform"
+                        MaxHeight="500" MouseWheel="AlbumCoverImage_MouseWheel"
+                        Source="Images/NoCover.png"/>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
